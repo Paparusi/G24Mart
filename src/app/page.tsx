@@ -42,11 +42,43 @@ export default function Home() {
               <p className="text-gray-600">Phân tích kinh doanh chuyên sâu</p>
             </Link>
             
-            <Link href="/enterprise" className="bg-gradient-to-r from-purple-500 to-blue-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
-              <div className="text-3xl mb-4">🏢</div>
-              <h3 className="text-lg font-semibold mb-2">Enterprise Features</h3>
-              <p className="text-purple-100">Tính năng vượt trội so với KiotViet</p>
+            <Link href="/employees" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
+              <div className="text-3xl mb-4">👥</div>
+              <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600">Quản Lý Nhân Viên</h3>
+              <p className="text-gray-600">HR system với performance tracking</p>
             </Link>
+          </div>
+          
+          {/* Core KiotViet Features */}
+          <div className="mt-12">
+            <h3 className="text-2xl font-bold text-center mb-8 text-gray-800">
+              🔧 Chức năng cốt lõi như KiotViet
+            </h3>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Link href="/initialize" className="bg-gradient-to-r from-green-400 to-blue-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
+                <div className="text-3xl mb-4">🏪</div>
+                <h3 className="text-lg font-semibold mb-2">Khởi tạo cửa hàng</h3>
+                <p className="text-green-100">Setup nhanh chóng như KiotViet</p>
+              </Link>
+              
+              <Link href="/users" className="bg-gradient-to-r from-purple-400 to-pink-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
+                <div className="text-3xl mb-4">👤</div>
+                <h3 className="text-lg font-semibold mb-2">Quản lý người dùng</h3>
+                <p className="text-purple-100">Phân quyền và tài khoản</p>
+              </Link>
+              
+              <Link href="/wiki" className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
+                <div className="text-3xl mb-4">📚</div>
+                <h3 className="text-lg font-semibold mb-2">Wiki G24Mart</h3>
+                <p className="text-yellow-100">Từ điển thuật ngữ</p>
+              </Link>
+              
+              <Link href="/enterprise" className="bg-gradient-to-r from-red-400 to-purple-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
+                <div className="text-3xl mb-4">🚀</div>
+                <h3 className="text-lg font-semibold mb-2">Tính năng vượt trội</h3>
+                <p className="text-red-100">Nhiều hơn KiotViet</p>
+              </Link>
+            </div>
           </div>
           
           <div className="mt-12 space-y-4">
