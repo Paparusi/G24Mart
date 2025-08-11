@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Receipt from '@/components/Receipt'
-import UnifiedBarcodeScanner from '@/components/UnifiedBarcodeScanner'
-import { ScannedProductData } from '@/hooks/useEnhancedBarcodeScanner'
+import SimpleBarcodeInput from '@/components/SimpleBarcodeInput'
 
 interface CartItem {
   id: string
@@ -65,18 +64,15 @@ export default function POSPage() {
   
   const categories = ['Tất Cả', ...Array.from(new Set(mockProducts.map(p => p.category)))]
 
-  // Handle unified scanner results
-  const handleUnifiedScannerResult = (productData: ScannedProductData) => {
-    
-    const product = mockProducts.find(p => p.barcode === productData.barcode)
-    
+  // Handle barcode scanner results  
+  const handleBarcodeResult = (product: any) => {
     if (product && product.stock > 0) {
       addToCart(product)
       setScannerMessage(`✅ Thêm "${product.name}" vào giỏ hàng`)
     } else if (product && product.stock === 0) {
       setScannerMessage(`⚠️ Sản phẩm "${product.name}" đã hết hàng`)
     } else {
-      setScannerMessage(`❌ Không tìm thấy sản phẩm có mã: ${productData.barcode}`)
+      setScannerMessage(`❌ Không tìm thấy sản phẩm`)
     }
     
     // Auto clear message after 3 seconds
@@ -84,7 +80,6 @@ export default function POSPage() {
   }
 
   const handleScanError = (error: string) => {
-    
     setScannerMessage(`⚠️ Lỗi: ${error}`)
     setTimeout(() => setScannerMessage(''), 5000)
   }
@@ -239,14 +234,13 @@ export default function POSPage() {
               )}
             </div>
 
-            {/* Unified Barcode Scanner */}
+            {/* Barcode Scanner */}
             <div className="p-4 border-b border-gray-200 bg-gray-50">
               <h3 className="font-semibold text-gray-900 mb-3">🔍 Quét/Nhập Mã Vạch</h3>
-              <UnifiedBarcodeScanner
-                onProductScanned={handleUnifiedScannerResult}
+              <SimpleBarcodeInput
+                onProductScanned={handleBarcodeResult}
                 onError={handleScanError}
-                placeholder="Nhập mã vạch sản phẩm..."
-                autoFocus={false}
+                placeholder="Quét mã vạch hoặc nhập thủ công..."
               />
             </div>
 
