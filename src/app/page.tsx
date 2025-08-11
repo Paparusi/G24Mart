@@ -13,29 +13,29 @@ export default function Home() {
           </p>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
-            <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+            <Link href="/pos" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
               <div className="text-3xl mb-4">🛒</div>
-              <h3 className="text-lg font-semibold mb-2">Hệ Thống POS</h3>
+              <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600">Hệ Thống POS</h3>
               <p className="text-gray-600">Giao diện bán hàng nhanh và trực quan</p>
-            </div>
+            </Link>
             
-            <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+            <Link href="/inventory/advanced" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
               <div className="text-3xl mb-4">📦</div>
-              <h3 className="text-lg font-semibold mb-2">Quản Lý Kho</h3>
-              <p className="text-gray-600">Theo dõi và quản lý tồn kho thông minh</p>
-            </div>
+              <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600">Quản Lý Kho Nâng Cao</h3>
+              <p className="text-gray-600">Enterprise inventory với analytics</p>
+            </Link>
             
-            <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+            <Link href="/analytics" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
               <div className="text-3xl mb-4">📊</div>
-              <h3 className="text-lg font-semibold mb-2">Báo Cáo</h3>
-              <p className="text-gray-600">Thống kê doanh thu và phân tích chi tiết</p>
-            </div>
+              <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600">Business Intelligence</h3>
+              <p className="text-gray-600">Phân tích kinh doanh chuyên sâu</p>
+            </Link>
             
-            <div className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow">
+            <Link href="/employees" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
               <div className="text-3xl mb-4">👥</div>
-              <h3 className="text-lg font-semibold mb-2">Khách Hàng</h3>
-              <p className="text-gray-600">Quản lý khách hàng và chương trình khuyến mại</p>
-            </div>
+              <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600">Quản Lý Nhân Viên</h3>
+              <p className="text-gray-600">HR system với performance tracking</p>
+            </Link>
           </div>
           
           <div className="mt-12 space-y-4">
