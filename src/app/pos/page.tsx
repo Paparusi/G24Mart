@@ -4,24 +4,13 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Receipt from '@/components/Receipt'
 import SimpleBarcodeInput from '@/components/SimpleBarcodeInput'
-
-interface CartItem {
-  id: string
-  name: string
-  price: number
-  quantity: number
-  barcode?: string
-  discount?: number
-}
-
-interface Product {
-  id: string
-  name: string
-  price: number
-  barcode: string
-  stock: number
-  category: string
-}
+import HoldOrderModal from '@/components/HoldOrderModal'
+import SplitPaymentModal from '@/components/SplitPaymentModal'
+import QuickSellPanel from '@/components/QuickSellPanel'
+import ShiftManagementModal from '@/components/ShiftManagementModal'
+import { useAdvancedPOSStore } from '@/stores/useAdvancedPOSStore'
+import { CartItem, Product, SplitPayment } from '@/types/pos'
+import { Clock, Users, Calculator, Settings, Pause, CreditCard, ArrowLeftRight, RotateCcw, AlertTriangle } from 'lucide-react'
 
 const mockProducts: Product[] = [
   { id: '1', name: 'Coca Cola 330ml', price: 15000, barcode: '8934673001234', stock: 45, category: 'Nước Giải Khát' },
@@ -48,6 +37,9 @@ export default function POSPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('Tất Cả')
   const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showSplitPaymentModal, setShowSplitPaymentModal] = useState(false)
+  const [showHoldOrderModal, setShowHoldOrderModal] = useState(false)
+  const [showShiftModal, setShowShiftModal] = useState(false)
   const [selectedPayment, setSelectedPayment] = useState('cash')
   const [receivedAmount, setReceivedAmount] = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -58,9 +50,16 @@ export default function POSPage() {
   const [paymentError, setPaymentError] = useState('')
   const [showReceipt, setShowReceipt] = useState(false)
   const [currentReceipt, setCurrentReceipt] = useState<any>(null)
-  
-  // Simplified scanner message
   const [scannerMessage, setScannerMessage] = useState('')
+  
+  // Advanced POS store
+  const { 
+    addTransaction, 
+    currentShift, 
+    addCashTransaction,
+    taxRate,
+    receiptSettings 
+  } = useAdvancedPOSStore()
   
   const categories = ['Tất Cả', ...Array.from(new Set(mockProducts.map(p => p.category)))]
 
@@ -89,7 +88,7 @@ export default function POSPage() {
     if (existingItem) {
       setCart(cart.map(item => 
         item.id === product.id 
-          ? { ...item, quantity: item.quantity + 1 }
+          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
           : item
       ))
     } else {
@@ -98,7 +97,8 @@ export default function POSPage() {
         name: product.name,
         price: product.price,
         quantity: 1,
-        barcode: product.barcode
+        barcode: product.barcode,
+        total: product.price
       }])
     }
   }
@@ -113,7 +113,7 @@ export default function POSPage() {
     } else {
       setCart(cart.map(item => 
         item.id === productId 
-          ? { ...item, quantity: newQuantity }
+          ? { ...item, quantity: newQuantity, total: newQuantity * item.price }
           : item
       ))
     }
@@ -130,11 +130,14 @@ export default function POSPage() {
     return matchesSearch && matchesCategory && product.stock > 0
   })
 
-  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const subtotal = cart.reduce((sum, item) => sum + item.total, 0)
+  const tax = subtotal * taxRate
   const discountAmount = subtotal * (discount / 100)
-  const total = subtotal - discountAmount
+  const total = subtotal + tax - discountAmount
 
-  const processPayment = async () => {
+  const processPayment = async (splitPayments?: SplitPayment[]) => {
+    if (cart.length === 0) return
+    
     setIsProcessing(true)
     setPaymentStatus('processing')
     
@@ -142,20 +145,47 @@ export default function POSPage() {
       // Simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000))
       
-      // Create receipt
-      const receipt = {
-        id: `RC${Date.now()}`,
+      // Create transaction
+      const transactionId = `TX${Date.now()}`
+      const payments = splitPayments || [{ 
+        method: paymentMethods.find(p => p.id === selectedPayment)?.name || 'Cash', 
+        amount: total 
+      }]
+      
+      const transaction = {
+        id: transactionId,
         items: cart,
         subtotal,
+        tax,
         discount: discountAmount,
         total,
-        paymentMethod: paymentMethods.find(p => p.id === selectedPayment)?.name,
-        customerName,
-        customerPhone,
+        payments,
+        customerName: customerName || undefined,
+        customerPhone: customerPhone || undefined,
+        timestamp: new Date().toISOString(),
+        cashier: currentShift?.cashier || 'Unknown',
+        status: 'completed' as const,
+        receiptNumber: `RC${Date.now()}`
+      }
+      
+      // Add to transactions store
+      addTransaction(transaction)
+      
+      // Add cash transaction if cash payment
+      if (payments.some(p => p.method.toLowerCase().includes('cash') || p.method.toLowerCase().includes('tiền mặt'))) {
+        const cashAmount = payments.filter(p => p.method.toLowerCase().includes('cash') || p.method.toLowerCase().includes('tiền mặt'))
+                                   .reduce((sum, p) => sum + p.amount, 0)
+        if (cashAmount > 0) {
+          addCashTransaction('sale', cashAmount, transactionId)
+        }
+      }
+
+      // Create receipt  
+      const receipt = {
+        ...transaction,
         receivedAmount: parseFloat(receivedAmount) || total,
         change: parseFloat(receivedAmount) > total ? parseFloat(receivedAmount) - total : 0,
-        timestamp: new Date().toISOString(),
-        cashier: 'Admin User'
+        storeInfo: receiptSettings
       }
 
       setPaymentStatus('success')
@@ -170,6 +200,10 @@ export default function POSPage() {
       setReceivedAmount('')
       setDiscount(0)
       setSelectedPayment('cash')
+      setScannerMessage('✅ Thanh toán thành công!')
+      
+      // Auto clear success message
+      setTimeout(() => setScannerMessage(''), 3000)
 
     } catch (error) {
       setPaymentStatus('error')
@@ -178,6 +212,16 @@ export default function POSPage() {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const handleHoldOrder = () => {
+    setCart([])
+    setScannerMessage('✅ Đơn hàng đã được giữ thành công!')
+    setTimeout(() => setScannerMessage(''), 3000)
+  }
+
+  const handleSplitPayment = (payments: SplitPayment[]) => {
+    processPayment(payments)
   }
 
   return (
@@ -190,27 +234,74 @@ export default function POSPage() {
               ← Về Trang Chủ
             </Link>
             <h1 className="text-2xl font-bold text-gray-900">🛒 Hệ Thống Bán Hàng (POS)</h1>
+            {!currentShift && (
+              <div className="flex items-center gap-2 bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
+                <AlertTriangle className="w-4 h-4" />
+                Chưa mở ca làm
+              </div>
+            )}
           </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-600">Tổng tiền</div>
-            <div className="text-2xl font-bold text-blue-600">
-              {total.toLocaleString('vi-VN')} ₫
+          <div className="flex items-center gap-6">
+            {/* Advanced Controls */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowHoldOrderModal(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm"
+                title="Giữ đơn hàng"
+              >
+                <Pause className="w-4 h-4" />
+                Giữ Đơn
+              </button>
+              
+              <button
+                onClick={() => setShowSplitPaymentModal(true)}
+                disabled={cart.length === 0}
+                className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Thanh toán kết hợp"
+              >
+                <ArrowLeftRight className="w-4 h-4" />
+                TT Kết Hợp
+              </button>
+              
+              <button
+                onClick={() => setShowShiftModal(true)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
+                  currentShift 
+                    ? 'bg-green-600 text-white hover:bg-green-700' 
+                    : 'bg-red-600 text-white hover:bg-red-700'
+                }`}
+                title="Quản lý ca làm"
+              >
+                <Clock className="w-4 h-4" />
+                {currentShift ? 'Ca Đang Hoạt Động' : 'Mở Ca Làm'}
+              </button>
+            </div>
+            
+            <div className="text-right">
+              <div className="text-sm text-gray-600">Tổng tiền</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {total.toLocaleString('vi-VN')} ₫
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="flex flex-col lg:flex-row h-screen bg-gray-50">
-        {/* Left Panel - Products */}
-        <div className="flex-1 p-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
-            <div className="p-4 border-b border-gray-200">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm sản phẩm..."
-                    value={searchTerm}
+      <div className="p-6 space-y-6">
+        {/* Quick Sell Panel */}
+        <QuickSellPanel onAddToCart={addToCart} />
+        
+        <div className="flex flex-col xl:flex-row gap-6 h-full">
+          {/* Left Panel - Products */}
+          <div className="flex-1">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm sản phẩm..."
+                      value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -387,11 +478,141 @@ export default function POSPage() {
             )}
           </div>
         </div>
+        </div>
       </div>
 
-      {/* Payment Modal & Receipt Component would go here... */}
-      {/* For brevity, I'm not including the full payment modal and receipt components */}
-      {/* They would be the same as in the original file */}
+      {/* Modals */}
+      <HoldOrderModal
+        isOpen={showHoldOrderModal}
+        onClose={() => setShowHoldOrderModal(false)}
+        onHoldOrder={handleHoldOrder}
+        currentCart={cart}
+        currentTotal={total}
+      />
+
+      <SplitPaymentModal
+        isOpen={showSplitPaymentModal}
+        onClose={() => setShowSplitPaymentModal(false)}
+        onComplete={handleSplitPayment}
+        totalAmount={total}
+        paymentMethods={paymentMethods}
+      />
+
+      <ShiftManagementModal
+        isOpen={showShiftModal}
+        onClose={() => setShowShiftModal(false)}
+      />
+
+      {/* Receipt Modal */}
+      {showReceipt && currentReceipt && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <Receipt 
+              orderNumber={currentReceipt.receiptNumber || currentReceipt.id}
+              items={currentReceipt.items}
+              subtotal={currentReceipt.subtotal}
+              discount={currentReceipt.discount || 0}
+              total={currentReceipt.total}
+              paymentMethod={currentReceipt.paymentMethod || currentReceipt.payments?.[0]?.method || 'Cash'}
+              received={currentReceipt.receivedAmount}
+              change={currentReceipt.change}
+              customer={currentReceipt.customerName || 'Khách lẻ'}
+              phone={currentReceipt.customerPhone}
+              date={new Date(currentReceipt.timestamp).toLocaleDateString('vi-VN')}
+              cashier={currentReceipt.cashier}
+            />
+            <button
+              onClick={() => setShowReceipt(false)}
+              className="w-full mt-4 bg-gray-600 text-white py-2 rounded-md hover:bg-gray-700"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal - Basic version for single payments */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold mb-4">Thanh Toán</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Phương thức thanh toán
+                </label>
+                <select
+                  value={selectedPayment}
+                  onChange={(e) => setSelectedPayment(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  {paymentMethods.map(method => (
+                    <option key={method.id} value={method.id}>{method.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tên khách hàng (tùy chọn)
+                </label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Nhập tên khách hàng"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Số điện thoại (tùy chọn)
+                </label>
+                <input
+                  type="text"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                  placeholder="Nhập số điện thoại"
+                />
+              </div>
+              
+              {selectedPayment === 'cash' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tiền khách đưa
+                  </label>
+                  <input
+                    type="number"
+                    value={receivedAmount}
+                    onChange={(e) => setReceivedAmount(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    placeholder={`Tối thiểu: ${total.toLocaleString('vi-VN')} ₫`}
+                  />
+                </div>
+              )}
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 bg-gray-500 text-white py-2 rounded-md hover:bg-gray-600"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={() => processPayment()}
+                  disabled={isProcessing}
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {isProcessing ? 'Đang xử lý...' : 'Thanh Toán'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
