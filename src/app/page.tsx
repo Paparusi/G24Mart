@@ -9,9 +9,20 @@ export default function Home() {
             G24Mart
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Hệ thống quản lý cửa hàng tiện lợi toàn diện - Giải pháp POS và quản lý kho hàng thông minh
+            Hệ thống quản lý cửa hàng tiện lợi toàn diện - Vượt trội hơn KiotViet với độ ổn định 99.9%
           </p>
           
+          {/* KiotViet Status Alert */}
+          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg mb-8 max-w-4xl mx-auto">
+            <div className="flex items-center">
+              <div className="text-2xl mr-3">🚨</div>
+              <div>
+                <h3 className="font-semibold">KiotViet hiện đang gặp sự cố!</h3>
+                <p className="text-sm">Lỗi 503 - Server quá tải. G24Mart luôn sẵn sàng thay thế với hiệu suất vượt trội!</p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
             <Link href="/pos" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
               <div className="text-3xl mb-4">🛒</div>
@@ -31,10 +42,10 @@ export default function Home() {
               <p className="text-gray-600">Phân tích kinh doanh chuyên sâu</p>
             </Link>
             
-            <Link href="/employees" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
-              <div className="text-3xl mb-4">👥</div>
-              <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600">Quản Lý Nhân Viên</h3>
-              <p className="text-gray-600">HR system với performance tracking</p>
+            <Link href="/enterprise" className="bg-gradient-to-r from-purple-500 to-blue-600 text-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
+              <div className="text-3xl mb-4">🏢</div>
+              <h3 className="text-lg font-semibold mb-2">Enterprise Features</h3>
+              <p className="text-purple-100">Tính năng vượt trội so với KiotViet</p>
             </Link>
           </div>
           
