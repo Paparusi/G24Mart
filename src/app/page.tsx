@@ -24,6 +24,12 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+            <Link href="/barcode-scanner" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
+              <div className="text-3xl mb-4">📷</div>
+              <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600">Quét Mã Vạch</h3>
+              <p className="text-gray-600">Scanner chuyên dụng với camera</p>
+            </Link>
+            
             <Link href="/pos" className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition-shadow group">
               <div className="text-3xl mb-4">🛒</div>
               <h3 className="text-lg font-semibold mb-2 group-hover:text-blue-600">Hệ Thống POS</h3>

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import Receipt from '@/components/Receipt'
-import SimpleBarcodeInput from '@/components/SimpleBarcodeInput'
+import POSBarcodeInput from '@/components/POSBarcodeInput'
 import HoldOrderModal from '@/components/HoldOrderModal'
 import SplitPaymentModal from '@/components/SplitPaymentModal'
 import QuickSellPanel from '@/components/QuickSellPanel'
@@ -326,14 +326,10 @@ export default function POSPage() {
             </div>
 
             {/* Barcode Scanner */}
-            <div className="p-4 border-b border-gray-200 bg-gray-50">
-              <h3 className="font-semibold text-gray-900 mb-3">🔍 Quét/Nhập Mã Vạch</h3>
-              <SimpleBarcodeInput
-                onProductScanned={handleBarcodeResult}
-                onError={handleScanError}
-                placeholder="Quét mã vạch hoặc nhập thủ công..."
-              />
-            </div>
+            <POSBarcodeInput
+              onProductScanned={handleBarcodeResult}
+              products={filteredProducts}
+            />
 
             {/* Products Grid */}
             <div className="flex-1 p-4 overflow-y-auto">
